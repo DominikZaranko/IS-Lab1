@@ -26,6 +26,7 @@ P=[x1;x2];
 
 %Desired output vector
 T=[1;1;1;-1;-1];
+labels = ["Apple", "Pear"];
 
 %% train single perceptron with two inputs and one output
 
@@ -37,7 +38,7 @@ w1 = randn(1);
 w2 = randn(1);
 b = randn(1);
 
-plt = [w1, w2, b, e];
+% plt = [w1, w2, b, e];
 epoch = 0;
 while e ~= 0
     e=0;
@@ -56,7 +57,47 @@ while e ~= 0
         e = e + abs(e_n);
     end
     epoch = epoch + 1;
-    plt = cat(1, [w1, w2, b, e], plt);
+    % plt = cat(1, [w1, w2, b, e], plt);
 end
 fprintf("epoch=%d, w1=%f, w2=%f, b=%f, e=%f\n", epoch,w1, w2,b, e)
-plot(plt, Marker='x')
+% plot(plt, Marker='x')
+
+%% Gaussian Naive Bayes classifier
+
+classes = unique(T); % 1;-1
+
+classPrior = [0,0];
+classMean = zeros(2, 2);
+classVariance = zeros(2, 2);
+
+for class = 1:numel(classes)
+    inClass = T == classes(class);
+    classData = [x1(:, inClass); x2(:, inClass)];
+    classPrior(class) = sum(inClass) / numel(T);
+    classMean(class, :) = mean(classData, 2);
+    classVariance(class, :) = max(var(classData, 1, 2), 1e-9);
+end
+
+
+%% Testing
+testImage = A4;
+testFeatures = [spalva_color(testImage), apvalumas_roundness(testImage)];
+score = zeros(2, 1);
+
+v = testFeatures(1)*w1 + testFeatures(2)*w2 + b;
+if v > 0
+    fprintf("Perceptron predicted label: %s\n", Ap)
+else
+    fprintf("Perceptron predicted label: %s\n", )
+end
+
+for class = 1:2
+    z = (testFeatures - classMean(class, :)) ./ sqrt(classVariance(class, :));
+
+    gaussianProbability = prod(exp(-0.5*z.^2) ./ sqrt(2*pi*classVariance(class, :)));
+
+    score(class) = classPrior(class) * gaussianProbability;
+end
+
+[bestValue, bestIndex] = max(score);
+fprintf("Naive Bayes predicted label: %s\n", labels(bestIndex))
