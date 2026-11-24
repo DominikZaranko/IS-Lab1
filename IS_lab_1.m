@@ -21,8 +21,6 @@ P4=imread('pear_09.jpg');
 %selecting features(color, roundness, 3 apples and 2 pears)
 x1=[spalva_color(A1) spalva_color(A2) spalva_color(A3) spalva_color(P1) spalva_color(P2)];
 x2=[apvalumas_roundness(A1) apvalumas_roundness(A2) apvalumas_roundness(A3) apvalumas_roundness(P1) apvalumas_roundness(P2)];
-% estimated features are stored in matrix P:
-P=[x1;x2];
 
 %Desired output vector
 T=[1;1;1;-1;-1];
@@ -38,8 +36,8 @@ w1 = randn(1);
 w2 = randn(1);
 b = randn(1);
 
-% plt = [w1, w2, b, e];
-epoch = 0;
+plt = [w1, w2, b, e];
+%epoch = 0;
 while e ~= 0
     e=0;
     for i=1:numel(T)
@@ -56,11 +54,12 @@ while e ~= 0
         b = b + eta*e_n;
         e = e + abs(e_n);
     end
-    epoch = epoch + 1;
-    % plt = cat(1, [w1, w2, b, e], plt);
+    %epoch = epoch + 1;
+    %plt = cat(1, [w1, w2, b, e], plt);
 end
-fprintf("epoch=%d, w1=%f, w2=%f, b=%f, e=%f\n", epoch,w1, w2,b, e)
-% plot(plt, Marker='x')
+%fprintf("epoch=%d, w1=%f, w2=%f, b=%f, e=%f\n", epoch,w1, w2,b, e)
+%plot(plt, Marker='x')
+%legend("w1", "w2", "b", "error")
 
 %% Gaussian Naive Bayes classifier
 
@@ -80,24 +79,45 @@ end
 
 
 %% Testing
-testImage = A9;
-testFeatures = [spalva_color(testImage), apvalumas_roundness(testImage)];
-score = zeros(2, 1);
+testImages = {A4, A5, A6, A7, A8, A9, P3, P4};
+testLabels = [1 1 1 1 1 1 -1 -1];
 
-v = testFeatures(1)*w1 + testFeatures(2)*w2 + b;
-if v > 0
-    fprintf("Perceptron predicted label: Apple\n");
-else
-    fprintf("Perceptron predicted label: Pear\n");
+perceptronCorrect = 0;
+bayesCorrect = 0;
+
+for i = 1:numel(testImages)
+    testFeatures = [spalva_color(testImages{i}), ...
+                    apvalumas_roundness(testImages{i})];
+
+    v = testFeatures(1)*w1 + testFeatures(2)*w2 + b;
+    perceptronPrediction = 1;
+    if v <= 0
+        perceptronPrediction = -1;
+    end
+
+    score = zeros(numel(classes), 1);
+
+    for class = 1:numel(classes)
+        z = (testFeatures - classMean(class, :)) ./ ...
+            sqrt(classVariance(class, :));
+
+        gaussianProbability = prod(exp(-0.5*z.^2) ./ ...
+            sqrt(2*pi*classVariance(class, :)));
+
+        score(class) = classPrior(class) * gaussianProbability;
+    end
+
+    [~, bayesIndex] = max(score);
+    bayesPrediction = classes(bayesIndex);
+
+    perceptronCorrect = perceptronCorrect + ...
+        (perceptronPrediction == testLabels(i));
+    bayesCorrect = bayesCorrect + ...
+        (bayesPrediction == testLabels(i));
 end
 
-for class = 1:2
-    z = (testFeatures - classMean(class, :)) ./ sqrt(classVariance(class, :));
+perceptronAccuracy = perceptronCorrect / numel(testImages) * 100;
+bayesAccuracy = bayesCorrect / numel(testImages) * 100;
 
-    gaussianProbability = prod(exp(-0.5*z.^2) ./ sqrt(2*pi*classVariance(class, :)));
-
-    score(class) = classPrior(class) * gaussianProbability;
-end
-
-[bestValue, bestIndex] = max(score);
-fprintf("Naive Bayes predicted label: %s\n", labels(bestIndex))
+fprintf("Perceptron accuracy: %.2f%%\n", perceptronAccuracy);
+fprintf("Bayes accuracy: %.2f%%\n", bayesAccuracy);
