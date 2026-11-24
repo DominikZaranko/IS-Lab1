@@ -1,0 +1,59 @@
+% Classification using perceptron
+
+% Reading apple images
+A1=imread('apple_04.jpg');
+A2=imread('apple_05.jpg');
+A3=imread('apple_06.jpg');
+A4=imread('apple_07.jpg');
+A5=imread('apple_11.jpg');
+A6=imread('apple_12.jpg');
+A7=imread('apple_13.jpg');
+A8=imread('apple_17.jpg');
+A9=imread('apple_19.jpg');
+
+% Reading pears images
+P1=imread('pear_01.jpg');
+P2=imread('pear_02.jpg');
+P3=imread('pear_03.jpg');
+P4=imread('pear_09.jpg');
+
+
+%selecting features(color, roundness, 3 apples and 2 pears)
+x1=[spalva_color(A1) spalva_color(A2) spalva_color(A3) spalva_color(P1) spalva_color(P2)];
+x2=[apvalumas_roundness(A1) apvalumas_roundness(A2) apvalumas_roundness(A3) apvalumas_roundness(P1) apvalumas_roundness(P2)];
+% estimated features are stored in matrix P:
+P=[x1;x2];
+
+%Desired output vector
+T=[1;1;1;-1;-1];
+
+%% train single perceptron with two inputs and one output
+
+eta = 0.1;
+e = 1e-12;
+plt = [];
+
+% generate random initial values
+w1 = randn(1);
+w2 = randn(1);
+b = randn(1);
+
+plt = cat(2, plt, [w1; w2; b; e]);
+while e < 1e-6
+    v = x1*w1 + x2*w2 + b;
+    for i=1:numel(T)
+        if v > 0
+            y = 1;
+        else
+            y = -1;
+        end
+
+        e_n = abs(T(i) - y);
+        w1 = w1 + eta*e_n*x1(i);
+        w2 = w2 + eta*e_n*x2(i);
+        b = b + eta*e_n;
+        e = e + e_n;
+    end
+    plt = cat(2, plt, [w1, w2, b, e]);
+end
+plot(plt)
